@@ -1,3 +1,3 @@
-from .cli import cli
+from .cli import cli_class
 
-cli()
+cli_class()

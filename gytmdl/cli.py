@@ -2,12 +2,12 @@ import json
 import logging
 import shutil
 from pathlib import Path
-
+import os
 import click
-
+from concurrent.futures import ThreadPoolExecutor
 from . import __version__
 from .dl import Dl
-
+from typing import Tuple
 EXCLUDED_PARAMS = (
     "urls",
     "config_location",
@@ -16,9 +16,6 @@ EXCLUDED_PARAMS = (
     "version",
     "help",
 )
-
-def download_song():
-    pass
 
 def write_default_config_file(ctx: click.Context):
     ctx.params["config_location"].parent.mkdir(parents=True, exist_ok=True)
@@ -180,115 +177,136 @@ def no_config_callback(
 )
 @click.version_option(__version__)
 @click.help_option("-h", "--help")
-def cli(
-    urls: str,
-    final_path: Path,
-    temp_path: Path,
-    cookies_location: Path,
-    ffmpeg_location: Path,
-    config_location: Path,
-    itag: str,
-    cover_size: int,
-    cover_format: str,
-    cover_quality: int,
-    template_folder: str,
-    template_file: str,
-    exclude_tags: str,
-    truncate: int,
-    log_level: str,
-    save_cover: bool,
-    overwrite: bool,
-    print_exceptions: bool,
-    url_txt: bool,
-    no_config_file: bool,
-):
-    logging.basicConfig(
-        format="[%(levelname)-8s %(asctime)s] %(message)s",
-        datefmt="%H:%M:%S",
-    )
-    logger = logging.getLogger(__name__)
-    logger.setLevel(log_level)
-    if not shutil.which(str(ffmpeg_location)):
-        logger.critical(f'FFmpeg not found at "{ffmpeg_location}"')
-        return
-    if cookies_location is not None and not cookies_location.exists():
-        logger.critical(f'Cookies file not found at "{cookies_location}"')
-        return
-    else:
-        logger.debug(f'Cookies file found at "{cookies_location}"')
-    if url_txt:
-        logger.debug("Reading URLs from text files")
-        _urls = []
-        for url in urls:
-            with open(url, "r") as f:
-                _urls.extend(f.read().splitlines())
-        urls = tuple(_urls)
-    logger.debug("Starting downloader")
-    dl = Dl(**locals())
-    download_queue = []
-    for i, url in enumerate(urls):
-        try:
-            logger.debug(f'Checking "{url}" (URL {i + 1}/{len(urls)})')
-            download_queue.append(dl.get_download_queue(url))
-        except Exception:
-            logger.error(
-                f"Failed to check URL {i + 1}/{len(urls)}", exc_info=print_exceptions
-            )
-    error_count = 0
-    logger.debug(f"Download queue:")
-    # print(len(download_queue[0]))
-    # for q in download_queue[0]:
-    #     print(q)
-    # raise 'forced exit!'
-    # return
-    for i, url in enumerate(download_queue):
-        for j, track in enumerate(url):
-            logger.info(
-                f'Downloading "{track["title"]}" (track {j + 1}/{len(url)} from URL {i + 1}/{len(download_queue)})'
-            )
-            try:
-                logger.debug("Getting tags")
-                ytmusic_watch_playlist = dl.get_ytmusic_watch_playlist(track["id"])
-                if ytmusic_watch_playlist is None:
-                    logger.warning("Track is a video, using song equivalent")
-                    track["id"] = dl.search_track(track["title"])
-                    logger.debug(f'Video ID changed to "{track["id"]}"')
-                    ytmusic_watch_playlist = dl.get_ytmusic_watch_playlist(track["id"])
-                tags = dl.get_tags(ytmusic_watch_playlist)
-                final_location = dl.get_final_location(tags)
-                logger.debug(f'Final location is "{final_location}"')
-                if not final_location.exists() or overwrite:
-                    temp_location = dl.get_temp_location(track["id"])
-                    logger.debug(f'Downloading to "{temp_location}"')
-                    dl.download(track["id"], temp_location)
-                    fixed_location = dl.get_fixed_location(track["id"])
-                    logger.debug(f'Remuxing to "{fixed_location}"')
-                    dl.fixup(temp_location, fixed_location)
-                    logger.debug("Applying tags")
-                    dl.apply_tags(fixed_location, tags)
-                    logger.debug("Moving to final location")
-                    dl.move_to_final_location(fixed_location, final_location)
-                else:
-                    logger.warning("File already exists at final location, skipping")
-                if save_cover:
-                    cover_location = dl.get_cover_location(final_location)
-                    if not cover_location.exists() or overwrite:
-                        logger.debug(f'Saving cover to "{cover_location}"')
-                        dl.save_cover(tags, cover_location)
-                    else:
-                        logger.debug(
-                            f'File already exists at "{cover_location}", skipping'
-                        )
-            except Exception:
-                error_count += 1
-                logger.error(
-                    f'Failed to download "{track["title"]}" (track {j + 1}/{len(url)} from URL '
-                    + f"{i + 1}/{len(download_queue)})",
-                    exc_info=print_exceptions,
-                )
-            finally:
-                if temp_path.exists():
-                    logger.debug(f'Cleaning up "{temp_path}"')
-                    # dl.cleanup()
+
+class cli_class:
+    def __init__(self,
+        urls: Tuple[str],
+        final_path: Path,
+        temp_path: Path,
+        cookies_location: Path,
+        ffmpeg_location: Path,
+        config_location: Path,
+        itag: str,
+        cover_size: int,
+        cover_format: str,
+        cover_quality: int,
+        template_folder: str,
+        template_file: str,
+        exclude_tags: str,
+        truncate: int,
+        log_level: str,
+        save_cover: bool,
+        overwrite: bool,
+        print_exceptions: bool,
+        url_txt: bool,
+        no_config_file: bool,
+        num_workers: int=3) -> None:
+        
+        logging.basicConfig(
+            format="[%(levelname)-8s %(asctime)s] %(message)s",
+            datefmt="%H:%M:%S",
+        )
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(log_level)
+        if not shutil.which(str(ffmpeg_location)):
+            self.logger.critical(f'FFmpeg not found at "{ffmpeg_location}"')
             return
-    logger.info(f"Done ({error_count} error(s))")
+        if cookies_location is not None and not cookies_location.exists():
+            self.logger.critical(f'Cookies file not found at "{cookies_location}"')
+            return
+        else:
+            self.logger.debug(f'Cookies file found at "{cookies_location}"')
+        if url_txt:
+            self.logger.debug("Reading URLs from text files")
+            _urls = []
+            for url in urls:
+                with open(url, "r") as f:
+                    _urls.extend(f.read().splitlines())
+            urls = tuple(_urls)
+        self.logger.debug("Starting downloader")
+        local_vars = locals()
+        local_vars.pop('self')
+        self.dl = Dl(**local_vars)
+        self.urls = urls
+        self.print_exceptions = print_exceptions
+        self.overwrite = overwrite
+        self.save_cover = save_cover
+        self.error_count = 0
+        self.temp_path = temp_path
+        self.num_workers=num_workers
+        self.cli()
+
+    def cli(
+        self
+    ):
+        
+        self.download_queue = []
+        for i, url in enumerate(self.urls):
+            try:
+                self.logger.debug(f'Checking "{url}" (URL {i + 1}/{len(self.urls)})')
+                self.download_queue.append(self.dl.get_download_queue(url))
+            except Exception:
+                self.logger.error(
+                    f"Failed to check URL {i + 1}/{len(self.urls)}", exc_info=self.print_exceptions
+                )
+        
+        self.logger.debug(f"Download queue:")
+        for i, url in enumerate(self.download_queue):
+            with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+                executor.map(self.download_track, url)
+        self.logger.info(f"Done ({self.error_count} error(s))")
+
+    def download_track(self, track):
+        # for j, track in enumerate(url):
+        self.logger.info(
+            f'Downloading "{track["title"]}" '
+            # f'Downloading "{track["title"]}" (track {j + 1}/{len(url)} from URL {i + 1}/{len(download_queue)})'
+        )
+        try:
+            self.logger.debug("Getting tags")
+            ytmusic_watch_playlist = self.dl.get_ytmusic_watch_playlist(track["id"])
+            if ytmusic_watch_playlist is None:
+                self.logger.warning("Track is a video, using song equivalent")
+                track["id"] = self.dl.search_track(track["title"])
+                self.logger.debug(f'Video ID changed to "{track["id"]}"')
+                ytmusic_watch_playlist = self.dl.get_ytmusic_watch_playlist(track["id"])
+            tags = self.dl.get_tags(ytmusic_watch_playlist)
+            final_location = self.dl.get_final_location(tags)
+            self.logger.debug(f'Final location is "{final_location}"')
+            if not final_location.exists() or self.overwrite:
+                temp_location = self.dl.get_temp_location(track["id"])
+                self.logger.debug(f'Downloading to "{temp_location}"')
+                self.dl.download(track["id"], temp_location)
+                fixed_location = self.dl.get_fixed_location(track["id"])
+                self.logger.debug(f'Remuxing to "{fixed_location}"')
+                self.dl.fixup(temp_location, fixed_location)
+                self.logger.debug("Applying tags")
+                self.dl.apply_tags(fixed_location, tags)
+                self.logger.debug("Moving to final location")
+                self.dl.move_to_final_location(fixed_location, final_location)
+                
+            else:
+                self.logger.warning("File already exists at final location, skipping")
+            if self.save_cover:
+                cover_location = self.dl.get_cover_location(final_location)
+                if not cover_location.exists() or self.overwrite:
+                    self.logger.debug(f'Saving cover to "{cover_location}"')
+                    self.dl.save_cover(tags, cover_location)
+                else:
+                    self.logger.debug(
+                        f'File already exists at "{cover_location}", skipping'
+                    )
+        except Exception:
+            self.error_count += 1
+            self.logger.error(
+                # f'Failed to download "{track["title"]}" (track {j + 1}/{len(url)} from URL '
+                # + f"{i + 1}/{len(download_queue)})",
+                f'Failed to download "{track["title"]}"',
+                exc_info=self.print_exceptions,
+            )
+        finally:
+            if self.temp_path.exists():
+                self.logger.debug(f'Cleaning up "{self.temp_path}"')
+                os.remove(temp_location)
+                # self.dl.cleanup()
+        # return
