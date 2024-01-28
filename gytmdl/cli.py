@@ -179,7 +179,7 @@ def no_config_callback(
 @click.version_option(__version__)
 @click.help_option("-h", "--help")
 def cli(
-    urls: tuple[str],
+    urls: str,
     final_path: Path,
     temp_path: Path,
     cookies_location: Path,
