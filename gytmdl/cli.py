@@ -175,6 +175,12 @@ def no_config_callback(
     callback=no_config_callback,
     help="Don't use the config file.",
 )
+@click.option(
+    "--num_workers",
+    type=int,
+    default=3,
+    help="Number of concurrent downloads",
+)
 @click.version_option(__version__)
 @click.help_option("-h", "--help")
 
