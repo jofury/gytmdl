@@ -315,4 +315,4 @@ class cli_class:
                 self.logger.debug(f'Cleaning up "{self.temp_path}"')
                 os.remove(temp_location)
                 # self.dl.cleanup()
-        # return
+      
