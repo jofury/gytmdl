@@ -1,7 +1,6 @@
 # Glomatico's YouTube Music Downloader (Multithreaded Download)
 
 A fork of gytmdl, supercharged with multithreaded download!
-Download YouTube Music songs/albums/playlists with tags from YouTube Music in 256kbps AAC/128kbps Opus/128kbps AAC.
 
 ## Setup
 1. Install python build
