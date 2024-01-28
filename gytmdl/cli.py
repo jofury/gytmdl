@@ -212,6 +212,8 @@ def cli(
     if cookies_location is not None and not cookies_location.exists():
         logger.critical(f'Cookies file not found at "{cookies_location}"')
         return
+    else:
+        logger.debug(f'Cookies file found at "{cookies_location}"')
     if url_txt:
         logger.debug("Reading URLs from text files")
         _urls = []
