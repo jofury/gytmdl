@@ -3,16 +3,7 @@
 A fork of gytmdl, supercharged with concurrent download!
 
 ## Setup
-1. Install python build
-   ```
-   pip install build
-   ```
-2. Build the cli tool
-   ```
-   python -m build
-   ```
-   OR
-3. Use as python module
+1. Use as python module
    ```
    python -m gytmdl "YOUR_PLAYLIST_URL"
    ```
