@@ -24,11 +24,11 @@ gytmdl "https://music.youtube.com/watch?v=3BFTio5296w"
 ```
 Download an album:
 ```
-gytmdl "YOUR_PLAYLIST_URL1" "YOUR_PLAYLIST_URL2"
+gytmdl "YOUR_PLAYLIST_URL"
 ```
 Download from multiple album:
 ```
-gytmdl "https://music.youtube.com/playlist?list=OLAK5uy_lvpL_Gr_aVEq-LaivwJaSK5EbFd4HeamM"
+gytmdl "YOUR_PLAYLIST_URL1" "YOUR_PLAYLIST_URL2"
 ```
 ## Configurations
 For detailed configurations, please visit the original repo at https://github.com/glomatico/gytmdl
