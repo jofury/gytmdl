@@ -233,6 +233,12 @@ def cli(
                 f"Failed to check URL {i + 1}/{len(urls)}", exc_info=print_exceptions
             )
     error_count = 0
+    logger.debug(f"Download queue:")
+    print(len(download_queue[0]))
+    for q in download_queue[0]:
+        print(q)
+    # raise 'forced exit!'
+    return
     for i, url in enumerate(download_queue):
         for j, track in enumerate(url):
             logger.info(
