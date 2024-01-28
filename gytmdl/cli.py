@@ -177,6 +177,7 @@ def no_config_callback(
 )
 @click.option(
     "--num_workers",
+    "-w",
     type=int,
     default=3,
     help="Number of concurrent downloads",
