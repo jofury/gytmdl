@@ -17,6 +17,8 @@ EXCLUDED_PARAMS = (
     "help",
 )
 
+def download_song():
+    pass
 
 def write_default_config_file(ctx: click.Context):
     ctx.params["config_location"].parent.mkdir(parents=True, exist_ok=True)
@@ -234,11 +236,11 @@ def cli(
             )
     error_count = 0
     logger.debug(f"Download queue:")
-    print(len(download_queue[0]))
-    for q in download_queue[0]:
-        print(q)
+    # print(len(download_queue[0]))
+    # for q in download_queue[0]:
+    #     print(q)
     # raise 'forced exit!'
-    return
+    # return
     for i, url in enumerate(download_queue):
         for j, track in enumerate(url):
             logger.info(
@@ -287,5 +289,6 @@ def cli(
             finally:
                 if temp_path.exists():
                     logger.debug(f'Cleaning up "{temp_path}"')
-                    dl.cleanup()
+                    # dl.cleanup()
+            return
     logger.info(f"Done ({error_count} error(s))")

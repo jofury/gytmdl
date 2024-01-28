@@ -5,3 +5,5 @@ __pycache__
 !pyproject.toml
 !README.md
 !requirements.txt
+
+*.m4a
