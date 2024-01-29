@@ -1,6 +1,6 @@
 # Glomatico's YouTube Music Downloader (Concurrent Download)
 
-A fork of gytmdl with concurrent download!
+A fork of gytmdl with concurrent download
 
 ## Setup
 1. Use as python module
