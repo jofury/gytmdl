@@ -3,7 +3,11 @@
 A fork of gytmdl with concurrent download
 
 ## Setup
-1. Use as python module
+1. Clone the repo
+   ```
+   git clone https://github.com/jofury/gytmdl-concurrent-download
+   ```
+2. Use as python module
    ```
    python -m gytmdl "YOUR_PLAYLIST_URL"
    ```
