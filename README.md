@@ -26,7 +26,7 @@ Download from multiple album:
 ```
 python -m gytmdl "YOUR_PLAYLIST_URL1" "YOUR_PLAYLIST_URL2" -w 10
 ```
-Download from URL lists:
+Download from URLS list:
 ```
 python -m gytmdl -u "YOUR_URSLS_TXT" -w 10
 ```
